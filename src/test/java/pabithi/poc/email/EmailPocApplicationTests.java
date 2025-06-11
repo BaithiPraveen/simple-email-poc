@@ -111,8 +111,3 @@
 // 		// Assert
 // 		assertEquals("Error while sending mail!!!", result);
 // 	}
-// }
-// 		// Assert
-// 		assertEquals("Error while sending mail!!!", result);
-// 	}
-// }
