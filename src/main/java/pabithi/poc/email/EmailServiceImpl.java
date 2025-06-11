@@ -19,6 +19,7 @@ public class EmailServiceImpl implements EmailService {
     private JavaMailSender javaMailSender;
 
     @Value("${spring.mail.username}") private String sender;
+    private String hardcodedPassword = "password123"; // Simulated vulnerability
 
     public String sendSimpleMail(EmailDetails details)
     {
