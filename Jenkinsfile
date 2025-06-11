@@ -1,17 +1,52 @@
 pipeline {
     agent any
 
+    environment {
+        SONAR_HOST_URL = 'http://localhost:9000'
+        SONAR_TOKEN = credentials('sonar-token')
+    }
+
     stages {
-        stage('Git Checkout') {
+        stage('Checkout') {
             steps {
-                git branch: 'main', changelog: false, poll: false, url: 'https://github.com/BaithiPraveen/simple-email-poc.git'
+                checkout scm
             }
         }
-        stage('Sonar Analysis') {
+
+        stage('Build') {
             steps {
                 bat 'mvn clean package'
-                bat ''' mvn sonar:sonar -Dsonar.url=http://localhost:9000/ -Dsonar.login=squ_501049b6ce4f369b8cef583bd16e4c9ac230fa07 -Dsonar.projectName=email-poc -Dsonar.java.binaries=target/classes -Dsonar.projectKey=email-poc '''
             }
+        }
+
+        stage('SonarQube Analysis') {
+            steps {
+                withSonarQubeEnv('SonarQube') {
+                    bat '''
+                        mvn sonar:sonar \
+                        -Dsonar.projectKey=email-poc \
+                        -Dsonar.projectName=email-poc \
+                        -Dsonar.java.binaries=target/classes \
+                        -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml \
+                        -Dsonar.sources=src/main/java \
+                        -Dsonar.tests=src/test/java
+                    '''
+                }
+            }
+        }
+
+        stage('Quality Gate') {
+            steps {
+                timeout(time: 1, unit: 'HOURS') {
+                    waitForQualityGate abortPipeline: true
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            cleanWs()
         }
     }
 } 
