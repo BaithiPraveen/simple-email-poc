@@ -2,7 +2,6 @@ package pabithi.poc.email;
 
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.mail.SimpleMailMessage;
@@ -15,11 +14,13 @@ import java.io.File;
 @Service
 public class EmailServiceImpl implements EmailService {
 
-    @Autowired
-    private JavaMailSender javaMailSender;
+    private final JavaMailSender javaMailSender;
+    private final String sender;
 
-    @Value("${spring.mail.username}") private String sender;
-    private String hardcodedPassword = "password123"; // Simulated vulnerability
+    public EmailServiceImpl(JavaMailSender javaMailSender, @Value("${spring.mail.username}") String sender) {
+        this.javaMailSender = javaMailSender;
+        this.sender = sender;
+    }
 
     public String sendSimpleMail(EmailDetails details)
     {
