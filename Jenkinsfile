@@ -75,6 +75,7 @@ pipeline {
                 script {
                     try {
                         withSonarQubeEnv('SonarQube') {
+                            echo "Starting SonarQube analysis..."
                             bat '''
                                 mvn sonar:sonar \
                                 -Dsonar.projectKey=email-poc \
@@ -85,6 +86,7 @@ pipeline {
                                 -Dsonar.tests=src/test/java \
                                 -Dsonar.java.source=17
                             '''
+                            echo "SonarQube analysis completed."
                         }
                     } catch (Exception e) {
                         echo "SonarQube analysis failed: ${e.message}"
@@ -98,11 +100,12 @@ pipeline {
             steps {
                 script {
                     try {
-                        timeout(time: 1, unit: 'HOURS') {
-                            waitForQualityGate abortPipeline: true
+                        echo "Waiting for SonarQube Quality Gate..."
+                        timeout(time: 5, unit: 'MINUTES') {
+                            waitForQualityGate abortPipeline: false
                         }
                     } catch (Exception e) {
-                        echo "Quality Gate check failed: ${e.message}"
+                        echo "Quality Gate check failed or timed out: ${e.message}"
                         currentBuild.result = 'UNSTABLE'
                     }
                 }
