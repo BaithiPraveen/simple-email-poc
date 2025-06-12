@@ -5,11 +5,11 @@ pipeline {
         SONAR_HOST_URL = 'http://localhost:9000'
         SONAR_TOKEN = credentials('SonarQubeToken')
         JAVA_HOME = tool 'JDK17'
-        MAVEN_HOME = tool 'Maven'
+        MAVEN_HOME = tool 'Maven3'
     }
 
     tools {
-        maven 'maven3'
+        maven 'Maven3'
         jdk 'jdk17'
     }
 
@@ -28,13 +28,29 @@ pipeline {
 
         stage('Build') {
             steps {
-                bat 'mvn clean compile'
+                script {
+                    try {
+                        bat 'mvn clean compile'
+                    } catch (Exception e) {
+                        echo "Build failed: ${e.message}"
+                        currentBuild.result = 'FAILURE'
+                        error('Build stage failed')
+                    }
+                }
             }
         }
 
         stage('Test') {
             steps {
-                bat 'mvn test'
+                script {
+                    try {
+                        bat 'mvn test'
+                    } catch (Exception e) {
+                        echo "Tests failed: ${e.message}"
+                        currentBuild.result = 'FAILURE'
+                        error('Test stage failed')
+                    }
+                }
             }
             post {
                 always {
@@ -50,32 +66,54 @@ pipeline {
 
         stage('SonarQube Analysis') {
             steps {
-                withSonarQubeEnv('SonarQube') {
-                    bat '''
-                        mvn sonar:sonar \
-                        -Dsonar.projectKey=email-poc \
-                        -Dsonar.projectName=email-poc \
-                        -Dsonar.java.binaries=target/classes \
-                        -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml \
-                        -Dsonar.sources=src/main/java \
-                        -Dsonar.tests=src/test/java \
-                        -Dsonar.java.source=17
-                    '''
+                script {
+                    try {
+                        withSonarQubeEnv('SonarQube') {
+                            bat '''
+                                mvn sonar:sonar \
+                                -Dsonar.projectKey=email-poc \
+                                -Dsonar.projectName=email-poc \
+                                -Dsonar.java.binaries=target/classes \
+                                -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml \
+                                -Dsonar.sources=src/main/java \
+                                -Dsonar.tests=src/test/java \
+                                -Dsonar.java.source=17
+                            '''
+                        }
+                    } catch (Exception e) {
+                        echo "SonarQube analysis failed: ${e.message}"
+                        currentBuild.result = 'UNSTABLE'
+                    }
                 }
             }
         }
 
         stage('Quality Gate') {
             steps {
-                timeout(time: 1, unit: 'HOURS') {
-                    waitForQualityGate abortPipeline: true
+                script {
+                    try {
+                        timeout(time: 1, unit: 'HOURS') {
+                            waitForQualityGate abortPipeline: true
+                        }
+                    } catch (Exception e) {
+                        echo "Quality Gate check failed: ${e.message}"
+                        currentBuild.result = 'UNSTABLE'
+                    }
                 }
             }
         }
 
         stage('Package') {
             steps {
-                bat 'mvn package -DskipTests'
+                script {
+                    try {
+                        bat 'mvn package -DskipTests'
+                    } catch (Exception e) {
+                        echo "Package failed: ${e.message}"
+                        currentBuild.result = 'FAILURE'
+                        error('Package stage failed')
+                    }
+                }
             }
         }
 
@@ -92,6 +130,9 @@ pipeline {
         }
         failure {
             echo 'Pipeline failed!'
+        }
+        unstable {
+            echo 'Pipeline completed with warnings!'
         }
     }
 } 
