@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         SONAR_HOST_URL = 'http://localhost:9000'
-        SONAR_TOKEN = credentials('sonar-token')
+        SONAR_TOKEN = credentials('SonarQubeToken')
         JAVA_HOME = tool 'JDK17'
         MAVEN_HOME = tool 'Maven'
     }
