@@ -30,7 +30,9 @@ pipeline {
             steps {
                 script {
                     try {
+                        echo "Starting build..."
                         bat 'mvn clean compile'
+                        echo "Build completed successfully."
                     } catch (Exception e) {
                         echo "Build failed: ${e.message}"
                         currentBuild.result = 'FAILURE'
@@ -44,7 +46,9 @@ pipeline {
             steps {
                 script {
                     try {
+                        echo "Starting tests..."
                         bat 'mvn test'
+                        echo "Tests completed successfully."
                     } catch (Exception e) {
                         echo "Tests failed: ${e.message}"
                         currentBuild.result = 'FAILURE'
@@ -55,17 +59,20 @@ pipeline {
             post {
                 always {
                     script {
+                        echo "Processing test reports..."
                         if (fileExists('target/surefire-reports/TEST-*.xml')) {
+                            echo "Found test reports, publishing..."
                             junit 'target/surefire-reports/TEST-*.xml'
                         } else {
                             echo 'No test reports found. Skipping JUnit report.'
                         }
+                        echo "Processing coverage reports..."
+                        jacoco(
+                            execPattern: '**/target/jacoco.exec',
+                            classPattern: '**/target/classes',
+                            sourcePattern: '**/src/main/java'
+                        )
                     }
-                    jacoco(
-                        execPattern: '**/target/jacoco.exec',
-                        classPattern: '**/target/classes',
-                        sourcePattern: '**/src/main/java'
-                    )
                 }
             }
         }
@@ -74,8 +81,8 @@ pipeline {
             steps {
                 script {
                     try {
+                        echo "Starting SonarQube analysis..."
                         withSonarQubeEnv('SonarQube') {
-                            echo "Starting SonarQube analysis..."
                             bat '''
                                 mvn sonar:sonar \
                                 -Dsonar.projectKey=email-poc \
@@ -86,10 +93,11 @@ pipeline {
                                 -Dsonar.tests=src/test/java \
                                 -Dsonar.java.source=17
                             '''
-                            echo "SonarQube analysis completed."
                         }
+                        echo "SonarQube analysis completed successfully."
                     } catch (Exception e) {
                         echo "SonarQube analysis failed: ${e.message}"
+                        echo "Stack trace: ${e.printStackTrace()}"
                         currentBuild.result = 'UNSTABLE'
                     }
                 }
@@ -102,10 +110,12 @@ pipeline {
                     try {
                         echo "Waiting for SonarQube Quality Gate..."
                         timeout(time: 5, unit: 'MINUTES') {
-                            waitForQualityGate abortPipeline: false
+                            def qualityGate = waitForQualityGate abortPipeline: false
+                            echo "Quality Gate status: ${qualityGate.status}"
                         }
                     } catch (Exception e) {
                         echo "Quality Gate check failed or timed out: ${e.message}"
+                        echo "Stack trace: ${e.printStackTrace()}"
                         currentBuild.result = 'UNSTABLE'
                     }
                 }
@@ -116,7 +126,9 @@ pipeline {
             steps {
                 script {
                     try {
+                        echo "Starting package..."
                         bat 'mvn package -DskipTests'
+                        echo "Package completed successfully."
                     } catch (Exception e) {
                         echo "Package failed: ${e.message}"
                         currentBuild.result = 'FAILURE'
@@ -128,7 +140,9 @@ pipeline {
 
         stage('Cleanup') {
             steps {
+                echo "Starting cleanup..."
                 cleanWs()
+                echo "Cleanup completed."
             }
         }
     }
@@ -142,6 +156,7 @@ pipeline {
         }
         unstable {
             echo 'Pipeline completed with warnings!'
+            echo 'Check the logs above for details about what caused the unstable status.'
         }
     }
 } 
