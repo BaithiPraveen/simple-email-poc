@@ -54,7 +54,14 @@ pipeline {
             }
             post {
                 always {
-                    junit '**/target/surefire-reports/*.xml'
+                    script {
+                        def testResults = findFiles(glob: '**/target/surefire-reports/*.xml')
+                        if (testResults.size() > 0) {
+                            junit '**/target/surefire-reports/*.xml'
+                        } else {
+                            echo 'No test reports found. Skipping JUnit report.'
+                        }
+                    }
                     jacoco(
                         execPattern: '**/target/jacoco.exec',
                         classPattern: '**/target/classes',
