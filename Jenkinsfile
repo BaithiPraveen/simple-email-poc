@@ -78,12 +78,15 @@ pipeline {
                 bat 'mvn package -DskipTests'
             }
         }
+
+        stage('Cleanup') {
+            steps {
+                cleanWs()
+            }
+        }
     }
 
     post {
-        always {
-            cleanWs()
-        }
         success {
             echo 'Pipeline completed successfully!'
         }
