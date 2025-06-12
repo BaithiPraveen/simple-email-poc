@@ -4,13 +4,13 @@ pipeline {
     environment {
         SONAR_HOST_URL = 'http://localhost:9000'
         SONAR_TOKEN = credentials('SonarQubeToken')
-        JAVA_HOME = tool 'jdk-17'
+        JAVA_HOME = tool 'jdk17'
         MAVEN_HOME = tool 'maven3'
     }
 
     tools {
         maven 'maven3'
-        jdk 'jdk-17'
+        jdk 'jdk17'
     }
 
     stages {
