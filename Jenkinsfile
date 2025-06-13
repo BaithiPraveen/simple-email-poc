@@ -109,13 +109,13 @@ pipeline {
                 script {
                     try {
                         echo "Waiting for SonarQube Quality Gate..."
-                        timeout(time: 5, unit: 'MINUTES') {
+                        timeout(time: 1, unit: 'MINUTES') {
                             def qualityGate = waitForQualityGate abortPipeline: false
                             echo "Quality Gate status: ${qualityGate.status}"
                         }
                     } catch (Exception e) {
                         echo "Quality Gate check failed or timed out: ${e.message}"
-                        echo "Stack trace: ${e.printStackTrace()}"
+                        echo "Error details: ${e.toString()}"
                         currentBuild.result = 'UNSTABLE'
                     }
                 }
